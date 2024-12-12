@@ -30,6 +30,7 @@ const createGameboard = function () {
       console.log(row);
     }
   };
+
   // function to mark a cell given an i, j, and a mark
   // MAY NEED LOGIC TO AVOID OVERWRITING / out of bounds
   const markCell = (x, y, mark) => {
@@ -76,13 +77,15 @@ const gameController = (function (
   let board = createGameboard();
   const player1 = createPlayer(player1Name, "X");
   const player2 = createPlayer(player2Name, "O");
-  // state variable for finished game
+
+  // TODO???? state variable for finished game
   // state variable for active player, along with toggle func
   let activePlayer = player1;
   const getActivePlayer = () => activePlayer;
   const toggleActivePlayer = () => {
     activePlayer = activePlayer === player1 ? player2 : player1;
   };
+
   // func for check win
   const checkWin = function () {
     // check rows, cols and diagonals
@@ -152,8 +155,16 @@ const gameController = (function (
     // no 3 in a row means no win
     return false;
   };
+
+  // func for printing the game board
+  const printGameState = function () {
+    board.printBoard();
+    console.log(`${activePlayer.getName()}'s Move:`);
+  };
+
   // func for playing a turn (check win at the end of each turn)
   const playRound = function (row, col) {
+    printGameState();
     // round logic
     // // print the board
     // board.printBoard();
@@ -170,13 +181,10 @@ const gameController = (function (
     // swap active player for next turn
     toggleActivePlayer();
   };
+
   // func for new game
   const startNewGame = function () {
     board = createGameboard();
-  };
-  // func for printing the game board
-  const printGameboard = function () {
-    board.printBoard();
   };
 
   return {
@@ -185,3 +193,9 @@ const gameController = (function (
     startNewGame,
   };
 })();
+
+gameController.playRound(0, 0);
+gameController.playRound(0, 1);
+gameController.playRound(1, 1);
+gameController.playRound(1, 2);
+gameController.playRound(2, 2);
