@@ -164,17 +164,15 @@ const gameController = (function (
 
   // func for playing a turn (check win at the end of each turn)
   const playRound = function (row, col) {
-    printGameState();
     // round logic
-    // // print the board
-    // board.printBoard();
     // pick a cell to mark with the current player's mark
     board.markCell(row, col, activePlayer.getMark());
-    // print board after marking
-    board.printBoard();
+    // board.printBoard();
+    printGameState();
     // check win at end of turn
     if (checkWin()) {
-      // change state????
+      // print board after marking IF winning move
+      board.printBoard();
       console.log(`Game Over! ${activePlayer.getName()} wins!!!`);
       return;
     }
@@ -188,14 +186,66 @@ const gameController = (function (
   };
 
   return {
+    getBoard: board.getBoard,
     getActivePlayer,
     playRound,
     startNewGame,
   };
 })();
 
-gameController.playRound(0, 0);
-gameController.playRound(0, 1);
-gameController.playRound(1, 1);
-gameController.playRound(1, 2);
-gameController.playRound(2, 2);
+// screenController will handle the view
+// inject the gameController
+const screenController = (function (game) {
+  // get the DOM elements?
+  // const alertMsgView = document.querySelector(".alert-message");
+  // const legendView = document.querySelector(".player-legend");
+  const boardView = document.querySelector(".board");
+  const newGameBtn = document.querySelector(".new-game-btn");
+
+  // func to update the display
+  function updateScreen() {
+    // clear board view
+    boardView.textContent = "";
+
+    // get most recent board state and active player
+    const board = game.getBoard();
+    console.log(board);
+    const activePlayer = game.getActivePlayer();
+
+    // render the board (each cell is a button)
+    board.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        // create cell btn
+        const cellBtn = document.createElement("button");
+        cellBtn.classList.add("cell");
+        cellBtn.textContent = cell;
+        // add row and col index to dataset of btn element
+        cellBtn.dataset.row = rowIndex;
+        cellBtn.dataset.col = colIndex;
+        boardView.appendChild(cellBtn);
+      });
+    });
+  }
+
+  // func to handle clicks
+  // have to make sure the target is a button
+  function boardClickHandler(event) {
+    // early return if click wasn't on a cell
+    if (!event.target.classList.contains("cell")) {
+      return;
+    }
+
+    const selectedRow = event.target.dataset.row;
+    const selectedCol = event.target.dataset.col;
+    game.playRound(selectedRow, selectedCol);
+
+    // updateScreen after the round is played
+    updateScreen();
+  }
+
+  // driver code!!!!
+  // attach click handler for entire board,
+  boardView.addEventListener("click", boardClickHandler);
+  // initial render
+  updateScreen();
+})(gameController);

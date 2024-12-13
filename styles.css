@@ -1,0 +1,15 @@
+.board {
+  display: grid;
+  aspect-ratio: 1 / 1;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
+}
+
+button.cell {
+  font-size: large;
+  font-weight: bold;
+}
+
+/* button.cell .x-marked {
+  color: red;
+} */
