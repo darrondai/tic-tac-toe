@@ -218,6 +218,10 @@ const screenController = (function (game) {
   const boardView = document.querySelector(".board");
   const newGameBtn = document.querySelector(".new-game-btn");
 
+  // TODO: add legend to display, no need to reload
+  // TODO: add player name inputs
+  // TODO: add alertmsg displaying (will need to return strings instead of console.print)
+
   // func to update the display
   function updateScreen() {
     // clear board view
