@@ -79,6 +79,22 @@ const gameController = (function (
   const player2 = createPlayer(player2Name, "O");
 
   // TODO???? state variable for finished game
+
+  // need to call board.getBoard() instead of just passing board.getBoard func
+  // bc only passing the function will use the wrong lexical context
+  // same with printboard
+  const getBoard = () => {
+    return board.getBoard();
+  };
+  const printBoard = () => {
+    return board.printBoard();
+  };
+
+  // func for new game
+  const startNewGame = function () {
+    board = createGameboard();
+  };
+
   // state variable for active player, along with toggle func
   let activePlayer = player1;
   const getActivePlayer = () => activePlayer;
@@ -165,8 +181,11 @@ const gameController = (function (
   // func for playing a turn (check win at the end of each turn)
   const playRound = function (row, col) {
     // round logic
-    // pick a cell to mark with the current player's mark
-    board.markCell(row, col, activePlayer.getMark());
+    // pick a cell to mark with the current player's mark (early return if invalid move)
+    let validMove = board.markCell(row, col, activePlayer.getMark());
+    if (!validMove) {
+      return;
+    }
     // board.printBoard();
     printGameState();
     // check win at end of turn
@@ -176,14 +195,17 @@ const gameController = (function (
       console.log(`Game Over! ${activePlayer.getName()} wins!!!`);
       return;
     }
+    // TODO: add logic for stalemate!!!
     // swap active player for next turn
     toggleActivePlayer();
   };
 
   return {
-    getBoard: board.getBoard,
+    getBoard,
+    printBoard,
     getActivePlayer,
     playRound,
+    startNewGame,
   };
 })();
 
@@ -191,9 +213,10 @@ const gameController = (function (
 // inject the gameController
 const screenController = (function (game) {
   // get the DOM elements?
-  // const alertMsgView = document.querySelector(".alert-message");
-  // const legendView = document.querySelector(".player-legend");
+  const alertMsgView = document.querySelector(".alert-message");
+  const legendView = document.querySelector(".player-legend");
   const boardView = document.querySelector(".board");
+  const newGameBtn = document.querySelector(".new-game-btn");
 
   // func to update the display
   function updateScreen() {
@@ -202,7 +225,6 @@ const screenController = (function (game) {
 
     // get most recent board state and active player
     const board = game.getBoard();
-    console.log(board);
     const activePlayer = game.getActivePlayer();
 
     // render the board (each cell is a button)
@@ -239,6 +261,13 @@ const screenController = (function (game) {
   // driver code!!!!
   // attach click handler for entire board,
   boardView.addEventListener("click", boardClickHandler);
+  // attach click handler for new game btn
+  newGameBtn.addEventListener("click", (event) => {
+    // start new game, then update screen
+    game.startNewGame();
+    console.log(game.getBoard());
+    updateScreen();
+  });
   // initial render
   updateScreen();
 })(gameController);
