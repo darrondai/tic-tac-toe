@@ -180,16 +180,10 @@ const gameController = (function (
     toggleActivePlayer();
   };
 
-  // func for new game
-  const startNewGame = function () {
-    board = createGameboard();
-  };
-
   return {
     getBoard: board.getBoard,
     getActivePlayer,
     playRound,
-    startNewGame,
   };
 })();
 
@@ -200,7 +194,6 @@ const screenController = (function (game) {
   // const alertMsgView = document.querySelector(".alert-message");
   // const legendView = document.querySelector(".player-legend");
   const boardView = document.querySelector(".board");
-  const newGameBtn = document.querySelector(".new-game-btn");
 
   // func to update the display
   function updateScreen() {
