@@ -79,19 +79,18 @@ const gameController = (function (
   const player2 = createPlayer(player2Name, "O");
 
   // TODO???? state variable for finished game
+  let isGameOver = false;
+  const getGameOverStatus = () => isGameOver;
 
   // need to call board.getBoard() instead of just passing board.getBoard func
   // bc only passing the function will use the wrong lexical context
   // same with printboard
-  const getBoard = () => {
-    return board.getBoard();
-  };
-  const printBoard = () => {
-    return board.printBoard();
-  };
+  const getBoard = () => board.getBoard();
+  const printBoard = () => board.printBoard();
 
   // func for new game
   const startNewGame = function () {
+    isGameOver = false;
     board = createGameboard();
   };
 
@@ -172,6 +171,9 @@ const gameController = (function (
     return false;
   };
 
+  // func for stalemates when board is full
+  const checkBoardFull = () => !board.getBoard().flat().includes("");
+
   // func for printing the game board
   const printGameState = function () {
     board.printBoard();
@@ -191,11 +193,17 @@ const gameController = (function (
     // check win at end of turn
     if (checkWin()) {
       // print board after marking IF winning move
+      isGameOver = true;
       board.printBoard();
       console.log(`Game Over! ${activePlayer.getName()} wins!!!`);
       return;
     }
     // TODO: add logic for stalemate!!!
+    else if (checkBoardFull()) {
+      isGameOver = true;
+      console.log("Stalemate! Try again.");
+      return;
+    }
     // swap active player for next turn
     toggleActivePlayer();
   };
@@ -206,6 +214,8 @@ const gameController = (function (
     getActivePlayer,
     playRound,
     startNewGame,
+    getGameOverStatus,
+    checkBoardFull,
   };
 })();
 
@@ -219,6 +229,9 @@ const screenController = (function (game) {
   const newGameBtn = document.querySelector(".new-game-btn");
 
   // TODO: add legend to display, no need to reload
+  // const p1 = document.createElement("p");
+  // p1.textContent = game.getActivePlayer().getName();
+  // legendView.appendChild(p1);
   // TODO: add player name inputs
   // TODO: add alertmsg displaying (will need to return strings instead of console.print)
 
@@ -244,6 +257,11 @@ const screenController = (function (game) {
         boardView.appendChild(cellBtn);
       });
     });
+
+    // inert toggle when game is over
+    if (game.getGameOverStatus()) {
+      boardView.toggleAttribute("inert");
+    }
   }
 
   // func to handle clicks
@@ -267,9 +285,12 @@ const screenController = (function (game) {
   boardView.addEventListener("click", boardClickHandler);
   // attach click handler for new game btn
   newGameBtn.addEventListener("click", (event) => {
+    // inert toggle, have to make sure that it only happens when the previous game was over/stalemate
+    if (game.getGameOverStatus()) {
+      boardView.toggleAttribute("inert");
+    }
     // start new game, then update screen
     game.startNewGame();
-    console.log(game.getBoard());
     updateScreen();
   });
   // initial render
