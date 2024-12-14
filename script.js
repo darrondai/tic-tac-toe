@@ -37,11 +37,13 @@ const createGameboard = function () {
     // handle out of bounds
     if (x < 0 || y < 0 || x >= ROW_COUNT || y >= COL_COUNT) {
       console.log("Pick a cell within 3x3 bounds!");
+      alert("Pick a cell within 3x3 bounds!");
       return false;
     }
     // avoid overwriting
     if (board_state[x][y] != "") {
       console.log(`Cell ${x},${y} already marked! Pick a different cell`);
+      alert(`Cell ${x},${y} already marked! Pick a different cell`);
       return false;
     }
     board_state[x][y] = mark;
@@ -53,16 +55,13 @@ const createGameboard = function () {
 
 // each player has a name, score, and mark
 const createPlayer = function (name, mark) {
-  // private name w/ a getter
+  // private name w/ a getter and setter
   const getName = () => name;
-  // private score with get/increment
-  let score = 0;
-  const getScore = () => score;
-  const incrementScore = () => score++;
+  const setName = (newName) => (name = newName);
   // private mark w/ a getter (for marking a cell)
   const getMark = () => mark;
 
-  return { getName, getScore, incrementScore, getMark };
+  return { getName, setName, getMark };
 };
 
 // singleton game controller
@@ -78,19 +77,21 @@ const gameController = (function (
   const player1 = createPlayer(player1Name, "X");
   const player2 = createPlayer(player2Name, "O");
 
-  // TODO???? state variable for finished game
-  let isGameOver = false;
-  const getGameOverStatus = () => isGameOver;
+  const getPlayers = () => {
+    return [player1, player2];
+  };
+
+  // state variable gamestatus will be onboing / stalemate / win
+  let gameStatus = "ongoing";
+  const getGameStatus = () => gameStatus;
 
   // need to call board.getBoard() instead of just passing board.getBoard func
   // bc only passing the function will use the wrong lexical context
-  // same with printboard
   const getBoard = () => board.getBoard();
-  const printBoard = () => board.printBoard();
 
   // func for new game
   const startNewGame = function () {
-    isGameOver = false;
+    gameStatus = "ongoing";
     board = createGameboard();
   };
 
@@ -193,15 +194,15 @@ const gameController = (function (
     // check win at end of turn
     if (checkWin()) {
       // print board after marking IF winning move
-      isGameOver = true;
+      gameStatus = "win";
       board.printBoard();
       console.log(`Game Over! ${activePlayer.getName()} wins!!!`);
       return;
     }
-    // TODO: add logic for stalemate!!!
+    // TODO: add logic for draw!!!
     else if (checkBoardFull()) {
-      isGameOver = true;
-      console.log("Stalemate! Try again.");
+      isGameOver = "draw";
+      console.log("Draw! Try again.");
       return;
     }
     // swap active player for next turn
@@ -210,12 +211,11 @@ const gameController = (function (
 
   return {
     getBoard,
-    printBoard,
+    getPlayers,
     getActivePlayer,
     playRound,
     startNewGame,
-    getGameOverStatus,
-    checkBoardFull,
+    getGameStatus,
   };
 })();
 
@@ -228,23 +228,37 @@ const screenController = (function (game) {
   const boardView = document.querySelector(".board");
   const newGameBtn = document.querySelector(".new-game-btn");
 
-  // TODO: add legend to display, no need to reload
-  // const p1 = document.createElement("p");
-  // p1.textContent = game.getActivePlayer().getName();
-  // legendView.appendChild(p1);
-  // TODO: add player name inputs
-  // TODO: add alertmsg displaying (will need to return strings instead of console.print)
+  // function to render a player
+  function renderPlayer(player) {
+    const playerView = document.createElement("p");
+    playerView.textContent = `${player.getName()}: ${player.getMark()}`;
+    legendView.appendChild(playerView);
+  }
 
-  // func to update the display
-  function updateScreen() {
+  const players = game.getPlayers();
+  players.forEach((player) => renderPlayer(player));
+
+  // name change functionality
+  const changeNamesBtn = document.querySelector(".change-names-btn");
+  const changeNamesDialog = document.querySelector(".change-names-dialog");
+  // attach listener to change names button to open dialog
+  changeNamesBtn.addEventListener("click", () => {
+    changeNamesDialog.showModal();
+  });
+
+  const form = changeNamesDialog.querySelector("form");
+  form.addEventListener("submit", (event) => {
+    const form_data = new FormData(form);
+    players[0].setName(form_data.get("player1Name") || "player1");
+    players[1].setName(form_data.get("player2Name") || "player2");
+    legendView.textContent = "";
+    players.forEach((player) => renderPlayer(player));
+  });
+
+  function renderBoard(board) {
     // clear board view
     boardView.textContent = "";
-
-    // get most recent board state and active player
-    const board = game.getBoard();
-    const activePlayer = game.getActivePlayer();
-
-    // render the board (each cell is a button)
+    // render children inside boardView
     board.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
         // create cell btn
@@ -257,10 +271,33 @@ const screenController = (function (game) {
         boardView.appendChild(cellBtn);
       });
     });
+  }
+
+  // func to update the display
+  function updateScreen() {
+    // get most recent board state and active player
+    const board = game.getBoard();
+    const activePlayer = game.getActivePlayer();
+    const gameStatus = game.getGameStatus();
+
+    // render the board (each cell is a button)
+    renderBoard(board);
 
     // inert toggle when game is over
-    if (game.getGameOverStatus()) {
+    if (gameStatus !== "ongoing") {
       boardView.toggleAttribute("inert");
+    }
+
+    // update win screen based on game status (win or draw)
+    if (gameStatus == "win") {
+      // game win message
+      alertMsgView.textContent = `Game Over! ${activePlayer.getName()} wins!!!`;
+    } else if (gameStatus == "draw") {
+      // draw message
+      alertMsgView.textContent = "Draw! Try again.";
+    } else {
+      // ongoing game means empty alert msg
+      alertMsgView.textContent = "";
     }
   }
 
@@ -268,14 +305,11 @@ const screenController = (function (game) {
   // have to make sure the target is a button
   function boardClickHandler(event) {
     // early return if click wasn't on a cell
-    if (!event.target.classList.contains("cell")) {
-      return;
-    }
-
+    if (!event.target.classList.contains("cell")) return;
+    // play round with selected button's row and col
     const selectedRow = event.target.dataset.row;
     const selectedCol = event.target.dataset.col;
     game.playRound(selectedRow, selectedCol);
-
     // updateScreen after the round is played
     updateScreen();
   }
@@ -285,13 +319,11 @@ const screenController = (function (game) {
   boardView.addEventListener("click", boardClickHandler);
   // attach click handler for new game btn
   newGameBtn.addEventListener("click", (event) => {
-    // inert toggle, have to make sure that it only happens when the previous game was over/stalemate
-    if (game.getGameOverStatus()) {
-      boardView.toggleAttribute("inert");
-    }
     // start new game, then update screen
     game.startNewGame();
     updateScreen();
+    // remove boardView's inert attribute (if it exists)
+    boardView.removeAttribute("inert");
   });
   // initial render
   updateScreen();
